@@ -1,0 +1,9 @@
+{
+  "name": "必携英語表現集",
+  "short_name": "英語表現集",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f6fb",
+  "theme_color": "#173b70",
+  "icons": []
+}
