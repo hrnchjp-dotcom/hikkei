@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173b70">
+<link rel="manifest" href="manifest.webmanifest">
+<title>必携英語表現集</title>
+<style>
+:root{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans",Meiryo,sans-serif;color:#182235;background:#f3f6fb}
+*{box-sizing:border-box}body{margin:0;padding:env(safe-area-inset-top) 16px env(safe-area-inset-bottom);max-width:620px;margin-inline:auto}
+header{padding:22px 4px 14px;color:#173b70}h1{font-size:23px;margin:0 0 5px}header p{margin:0;color:#63718a;font-size:13px}
+main{background:white;border-radius:22px;padding:20px;box-shadow:0 8px 28px #20385b12}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px}.muted{color:#718096;font-size:13px}
+.track{height:7px;background:#e8edf5;border-radius:9px;overflow:hidden;margin:10px 0 22px}.fill{height:100%;width:0;background:#2f855a;transition:width .2s}
+.tag{font-size:12px;color:#1c5797;background:#eaf2ff;padding:6px 10px;border-radius:20px}
+.prompt{background:#f5f7fb;border-radius:16px;padding:30px 16px;text-align:center;margin:18px 0}
+.prompt small{color:#728099}.prompt h2{font-size:25px;line-height:1.5;margin:12px 0 0}
+input{width:100%;padding:15px;border:1px solid #cbd5e1;border-radius:12px;font-size:17px;margin:8px 0 12px}
+button{border:0;border-radius:12px;padding:14px 16px;font-size:15px;font-weight:650;cursor:pointer}
+.primary{background:#173b70;color:white;width:100%}.secondary{background:#edf1f7;color:#24344d}.good{background:#e3f5e9;color:#17663a}.bad{background:#fff0ef;color:#a3342b}
+.actions{display:flex;gap:10px;margin-top:12px}.actions button{flex:1}
+.answer{background:#f5f7fb;padding:15px;border-radius:14px;margin:14px 0;line-height:1.7}
+nav{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:16px}
+nav button{font-size:13px;padding:12px 5px}
+.hidden{display:none!important}.stats{display:flex;gap:12px;margin:12px 0}.stat{flex:1;background:#f5f7fb;padding:12px;border-radius:12px;text-align:center}.stat strong{display:block;font-size:22px;color:#173b70}
+footer{text-align:center;color:#8490a3;font-size:11px;padding:18px}
+</style>
+</head>
+<body>
+<header><h1>必携英語表現集</h1><p>English Expression Trainer · Lesson 1</p></header>
+<main>
+ <div class="row"><span class="tag" id="mode">通常モード</span><span class="muted" id="counter">1 / 20</span></div>
+ <div class="track"><div class="fill" id="progress"></div></div>
+ <div class="row"><span class="muted" id="score">正解 0 · 不正解 0</span><span class="muted">Lesson 1</span></div>
+ <section id="quiz">
+  <div class="prompt"><small>次の日本語を英語にしてください</small><h2 id="question"></h2></div>
+  <input id="entry" autocomplete="off" autocapitalize="none" placeholder="英語表現を入力">
+  <button class="primary" id="check">答え合わせ</button>
+  <div id="feedback" class="answer hidden" aria-live="polite"></div>
+  <div class="actions hidden" id="mark">
+   <button class="bad" id="wrong">不正解</button><button class="good" id="correct">正解</button>
+  </div>
+  <nav>
+   <button class="secondary" id="prev">← 前へ</button>
+   <button class="secondary" id="skip">次へ →</button>
+   <button class="secondary" id="shuffle">シャッフル</button>
+  </nav>
+ </section>
+ <section id="summary" class="hidden">
+  <h2>今回の結果</h2><div class="stats"><div class="stat"><strong id="rightNum">0</strong><span class="muted">正解</span></div><div class="stat"><strong id="wrongNum">0</strong><span class="muted">不正解</span></div></div>
+  <p id="rate"></p><h3>復習する問題</h3><div id="review"></div>
+  <button class="primary" id="retry" style="margin-top:16px">もう一度はじめる</button>
+ </section>
+</main>
+<footer>学習記録はこの端末のブラウザ内に保存されます。</footer>
+<script>
+const questions = [["〜の開始時刻", "the starting time for ～"], ["行儀よくする", "behave oneself"], ["（人）の家に泊まる", "stay with ～"], ["〜する頃までには", "by the time S V"], ["一日中", "all day (long)"], ["夜遅くまで起きている", "stay up late at night"], ["外食する", "eat out"], ["はるばる、ずっと", "all the way"], ["（買い物などで）外出中である", "be out"], ["〜な夢を見る", "have a ～ dream"], ["留学する", "study abroad"], ["子どもを産む", "have a baby"], ["頑張って！", "Good luck!"], ["〜しながら", "while (V)ing"], ["道に迷う", "lose one's way"], ["時間をつぶす", "kill time"], ["たまたま〜する", "happen to (V)"], ["Aには〜なところがある", "There is something ～ about A"], ["〜の左に", "on the left"], ["AはBの向かい側にある", "A be across from B"]];
+let order=questions.map((_,i)=>i), pos=0, marked={}, revealed=false;
+const $=id=>document.getElementById(id);
+function normalize(s){return s.trim().toLowerCase().replace(/[～〜]/g,"~").replace(/\s+/g," ").replace(/[.!?。、「」]/g,"")}
+function render(){
+ const q=questions[order[pos]];
+ $("question").textContent=q[0];$("counter").textContent=`${pos+1} / ${order.length}`;
+ $("progress").style.width=`${Object.keys(marked).length/order.length*100}%`;
+ $("score").textContent=`正解 ${Object.values(marked).filter(Boolean).length} · 不正解 ${Object.values(marked).filter(v=>!v).length}`;
+ $("entry").value="";$("feedback").classList.add("hidden");$("mark").classList.add("hidden");revealed=false;
+ $("check").classList.remove("hidden");$("entry").disabled=false;
+}
+function reveal(){
+ if(revealed)return;revealed=true;
+ const q=questions[order[pos]], user=$("entry").value;
+ const exact=normalize(user)===normalize(q[1]);
+ $("feedback").innerHTML=`<b>参考書の表現：</b><br><strong>${q[1]}</strong><br><span class="muted">入力した回答：${user||"（未入力）"}</span><br><span class="muted">※表記の違いや同義表現は、必要に応じて自分で判断してください。</span>`;
+ $("feedback").classList.remove("hidden");$("mark").classList.remove("hidden");$("check").classList.add("hidden");$("entry").disabled=true;
+}
+function next(){if(pos<order.length-1){pos++;render()}else{finish()}}
+function finish(){
+ $("quiz").classList.add("hidden");$("summary").classList.remove("hidden");
+ const vals=order.map(i=>marked[i]).filter(v=>v!==undefined), right=vals.filter(Boolean).length, wrong=vals.length-right;
+ $("rightNum").textContent=right;$("wrongNum").textContent=wrong;$("rate").textContent=`正答率：${vals.length?Math.round(right/vals.length*100):0}%`;
+ $("review").innerHTML=order.filter(i=>marked[i]===false).map(i=>`<p><b>${questions[i][0]}</b><br>${questions[i][1]}</p>`).join("")||"間違えた問題はありません。";
+ localStorage.setItem("hikkeiLesson1",JSON.stringify({marked,at:new Date().toISOString()}));
+}
+$("check").onclick=reveal;$("entry").addEventListener("keydown",e=>{if(e.key==="Enter")reveal()});
+$("correct").onclick=()=>{marked[order[pos]]=true;next()};$("wrong").onclick=()=>{marked[order[pos]]=false;next()};
+$("prev").onclick=()=>{if(pos>0){pos--;render()}};$("skip").onclick=next;
+$("shuffle").onclick=()=>{order.sort(()=>Math.random()-.5);pos=0;$("mode").textContent="ランダムモード";render()};
+$("retry").onclick=()=>{order=questions.map((_,i)=>i);pos=0;marked={};$("summary").classList.add("hidden");$("quiz").classList.remove("hidden");$("mode").textContent="通常モード";render()};
+const saved=localStorage.getItem("hikkeiLesson1");if(saved){try{const x=JSON.parse(saved);$("score").textContent="前回の学習記録あり"}catch(e){}}
+render();
+if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("./sw.js").catch(()=>{});
+</script>
+</body></html>
